@@ -17,9 +17,7 @@
       radial-gradient(circle at 20% 0%, rgba(99,102,241,.35), transparent 50%),
       radial-gradient(circle at 80% 100%, rgba(24,203,150,.30), transparent 50%),
       radial-gradient(circle at 50% 0%, #143b5c, #0A2A43 70%);
-    background-attachment:fixed;
-    animation:hue 14s ease-in-out infinite alternate;}
-  @keyframes hue{0%{filter:hue-rotate(0deg);}100%{filter:hue-rotate(24deg);}}
+    background-attachment:fixed;}
   .top{padding:14px 18px;display:flex;justify-content:space-between;align-items:center;font-weight:800;}
   .top .nm{opacity:.85;}
   .top .sc{background:linear-gradient(120deg,var(--teal),var(--skyteal));color:var(--navy);padding:4px 16px;border-radius:30px;
@@ -179,19 +177,18 @@ function render(){
       return;
     }
     if(q.type==='open'){
+      if(document.getElementById('otext')) return;   // keep what they're already typing
       show(`<div style="width:100%;max-width:440px">
         <div class="msg" style="margin-bottom:8px">${q.emoji?q.emoji+' ':''}${esc(q.text)}</div>
-        <div class="sub" style="margin-bottom:14px">✍️ Type your answer</div>
-        <textarea id="otext" maxlength="250" placeholder="Be funny…"></textarea>
+        <div class="sub" style="margin-bottom:14px">✍️ Type your answer, then tap Send</div>
+        <textarea id="otext" maxlength="250" placeholder="Type here…"></textarea>
         <button class="go" onclick="submitOpen()">Send →</button></div>`);
-      document.getElementById('otext').focus();
     } else {
       const btns=q.options.map((o,i)=>`<button class="btn c${i}" style="animation-delay:${i*0.07}s" onclick="answer(${i})">${SHAPES[i]}<span>${esc(o)}</span></button>`).join('');
       wrap().innerHTML=`<div class="qbar">${q.emoji?q.emoji+' ':''}${esc(q.text)}</div><div class="grid">${btns}</div>`;
     }
   } else if(p==='reveal'){
     const q=state.question;
-    const rankTxt = state.you.rank ? ('Overall: '+ord(state.you.rank)) : '';
     if(q.type==='open'){
       show(`<div class="feedback"><div class="big">📺</div><div class="msg">Answers are on the big screen!</div></div>`);
     } else if(state.you.answered){
@@ -201,25 +198,24 @@ function render(){
         speed = `<div class="gain">${ord(state.you.speedRank)} fastest ⚡</div>`;
       }
       show(`<div class="feedback"><div class="big">${ok?'✅':'❌'}</div>
-        <div class="msg">${ok?'Correct!':'Not this time'}</div>
-        ${speed}<div class="rank">${rankTxt}</div></div>`);
+        <div class="msg">${ok?'Correct!':'Not quite!'}</div>
+        ${speed}<div class="rank">${ok?'Nice one 💚':"Next one's yours 💪"}</div></div>`);
     } else {
       show(`<div class="feedback"><div class="big">😴</div><div class="msg">No answer that round</div>
-        <div class="rank">${rankTxt}</div></div>`);
+        <div class="rank">Jump in on the next one!</div></div>`);
     }
     // sound once per question reveal
     const sig=p+':'+state.qIndex;
     if(sig!==lastSig){ lastSig=sig; if(q.type!=='open'){ state.you.correct?playGood():playBad(); } }
   } else if(p==='podium'){
-    const r=state.you.rank;
-    const medal = r===1?'🥇':r===2?'🥈':r===3?'🥉':'🎉';
+    // community vibe — no winners, no losers, just your own run
     const stats = `✓ ${state.you.nCorrect||0} correct` + (state.you.avg!=null?` · ⚡ ${state.you.avg}s avg`:'');
-    show(`<div class="feedback"><div class="big">${medal}</div>
-      <div class="msg">${r?'You finished '+ord(r)+'!':'Thanks for playing!'}</div>
+    show(`<div class="feedback"><div class="big">🎉</div>
+      <div class="msg">Great game, ${esc(state.you.name)}!</div>
       <div class="gain" style="font-size:22px">${stats}</div>
-      <div class="rank">Thanks for playing! 💙</div></div>`);
+      <div class="rank">Thanks for playing 💙</div></div>`);
     const sig=p+':done';
-    if(sig!==lastSig){ lastSig=sig; if(r&&r<=3) playGood(); }
+    if(sig!==lastSig){ lastSig=sig; playGood(); }
   }
 }
 

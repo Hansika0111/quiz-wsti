@@ -90,8 +90,10 @@ Please do a quick test run before the event so there are no surprises.
   GOOD TO KNOW
 ----------------------------------------------------------------
 
-• 15 seconds per multiple-choice question; 90 seconds for the final
-  open-ended question (its answers appear on the big screen).
+• 15 seconds per multiple-choice question; 30 seconds for the final
+  open-ended typing question (its answers appear on the big screen).
+• It's a community game — no winners, no losers. The final screen just
+  shows everyone, fastest fingers first, with their average speed.
 • The game auto-advances, so it runs hands-free after you press Start.
 • Up to ~50 players is comfortable. No cap, no subscription.
 • To stop the quiz, close the black window (or press Ctrl+C in it).
