@@ -1,0 +1,1 @@
+# WSTI Quiz uses only the Python standard library — no external packages needed.

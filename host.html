@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WSTI Quiz — Big Screen</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#e21b3c; --blue:#1368ce; --yellow:#d89e00; --green:#26890c;
+    --navy:#0A2A43; --teal:#18cb96; --skyteal:#7FD8C3; --slate:#2F4F6E; --purple:#6366f1;
+    --bg:#0A2A43; --ink:#fff;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; font-family:'Montserrat','Segoe UI',system-ui,sans-serif;}
+  html,body{height:100%;}
+  body{
+    background:#061a2b;
+    color:var(--ink); overflow:hidden; user-select:none;
+  }
+  /* ---- magical animated background ---- */
+  #bg{position:fixed; inset:0; z-index:0;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(99,102,241,.35), transparent 45%),
+      radial-gradient(circle at 85% 10%, rgba(24,203,150,.28), transparent 45%),
+      radial-gradient(circle at 50% 120%, rgba(19,104,206,.40), transparent 55%),
+      radial-gradient(circle at 50% -10%, #143b5c 0%, var(--navy) 55%, #061a2b 100%);
+    animation:aurora 16s ease-in-out infinite alternate;}
+  @keyframes aurora{
+    0%{filter:hue-rotate(0deg) saturate(1);}
+    100%{filter:hue-rotate(28deg) saturate(1.25);}
+  }
+  #stars{position:fixed; inset:0; z-index:1; pointer-events:none;}
+  #fx{position:fixed; inset:0; z-index:60; pointer-events:none;}
+
+  #app{position:relative; z-index:2; height:100vh; display:flex; flex-direction:column;}
+  .topbar{display:flex; align-items:center; justify-content:space-between; padding:14px 26px;}
+  .logo{display:flex; align-items:center; gap:14px; font-size:30px; font-weight:800; letter-spacing:3px; color:#fff;
+    text-shadow:0 0 24px rgba(24,203,150,.5);}
+  .logo .wsti-mark{width:42px; height:42px; filter:drop-shadow(0 0 10px rgba(24,203,150,.8));}
+  .logo .tag{font-size:15px; font-weight:700; color:var(--teal); letter-spacing:2px; text-transform:uppercase; opacity:.9;}
+  .pill{background:linear-gradient(120deg,var(--teal),var(--skyteal)); color:var(--navy); padding:8px 22px; border-radius:30px; font-size:18px; font-weight:800;
+    box-shadow:0 0 22px rgba(24,203,150,.55);}
+  .stage{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px 30px 26px; text-align:center; overflow:hidden;}
+  .qnum{font-size:20px; opacity:.7; margin-bottom:8px; letter-spacing:3px; text-transform:uppercase;}
+  .qtext{font-size:clamp(26px,3.8vw,54px); font-weight:800; line-height:1.12; max-width:1400px;
+    text-shadow:0 4px 30px rgba(0,0,0,.45);}
+
+  /* big themed question emoji */
+  .qemoji{font-size:clamp(48px,6vw,84px); line-height:1; margin-bottom:6px; display:inline-block;
+    filter:drop-shadow(0 6px 26px rgba(99,102,241,.6));
+    animation:floaty 3.4s ease-in-out infinite;}
+  @keyframes floaty{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-14px) rotate(3deg);}}
+
+  /* timer ring + counters row */
+  .midrow{display:flex; align-items:center; justify-content:center; gap:54px; margin:20px 0;}
+  .ringwrap{position:relative; width:130px; height:130px;}
+  .ring{width:130px; height:130px; transform:rotate(-90deg);}
+  .ring-bg{fill:none; stroke:rgba(255,255,255,.12); stroke-width:10;}
+  .ring-fg{fill:none; stroke:var(--teal); stroke-width:10; stroke-linecap:round;
+    filter:drop-shadow(0 0 8px var(--teal)); transition:stroke-dashoffset .25s linear, stroke .4s;}
+  .ring-num{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:50px; font-weight:800; color:#fff;}
+  .ringwrap.urgent .ring-num{animation:pulseNum .6s ease-in-out infinite;}
+  @keyframes pulseNum{0%,100%{transform:scale(1);}50%{transform:scale(1.18);}}
+  .answered{font-size:46px; font-weight:bold;}
+  .answered span{display:block; font-size:18px; opacity:.7; font-weight:normal; text-transform:uppercase; letter-spacing:2px;}
+
+  /* answer grid */
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:18px; width:100%; max-width:1300px; margin-top:6px;}
+  .opt{display:flex; align-items:center; gap:20px; padding:24px 30px; border-radius:16px;
+    font-size:clamp(20px,2.3vw,32px); font-weight:bold; color:#fff; position:relative; min-height:104px;
+    box-shadow:0 10px 0 rgba(0,0,0,.28), 0 0 30px rgba(0,0,0,.25);
+    transition:opacity .35s, transform .35s, box-shadow .35s;
+    opacity:0; transform:translateY(26px) scale(.96); animation:optIn .5s forwards;}
+  @keyframes optIn{to{opacity:1; transform:none;}}
+  .opt .shape{width:42px; height:42px; flex:none; display:flex; align-items:center; justify-content:center;}
+  .opt.c0{background:linear-gradient(135deg,#ff3658,var(--red));}
+  .opt.c1{background:linear-gradient(135deg,#2b86f0,var(--blue));}
+  .opt.c2{background:linear-gradient(135deg,#f0b91d,var(--yellow));}
+  .opt.c3{background:linear-gradient(135deg,#36b317,var(--green));}
+  svg.sh{width:38px; height:38px; fill:#fff;}
+
+  /* lobby */
+  .lobby{display:flex; gap:50px; align-items:center; justify-content:center; width:100%; flex-wrap:wrap;}
+  .joinbox{background:#fff; color:#0b1437; border-radius:22px; padding:26px 30px; text-align:center;
+    box-shadow:0 0 50px rgba(24,203,150,.4);}
+  .joinbox h2{font-size:22px; color:var(--navy); margin-bottom:8px;}
+  #qrcode{display:flex; justify-content:center; margin:6px 0;}
+  #qrcode img,#qrcode canvas{border-radius:8px;}
+  .url{font-size:26px; font-weight:bold; margin-top:10px;}
+  .url small{display:block; font-size:15px; color:#666; font-weight:normal; margin-top:6px;}
+  .players{flex:1; min-width:360px; max-width:760px;}
+  .players h3{font-size:24px; opacity:.85; margin-bottom:14px;}
+  .chips{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; max-height:62vh; overflow:auto;}
+  .chip{background:rgba(255,255,255,.16); padding:10px 18px; border-radius:30px; font-size:22px; font-weight:bold;
+    animation:pop .4s ease; box-shadow:0 0 18px rgba(24,203,150,.25);}
+  @keyframes pop{from{transform:scale(.4); opacity:0;} to{transform:scale(1); opacity:1;}}
+  .big{font-size:74px; font-weight:bold; text-shadow:0 0 40px rgba(24,203,150,.6);}
+
+  /* ===== combined results screen ===== */
+  .reveal-in{animation:fadeUp .55s ease both;}
+  @keyframes fadeUp{from{opacity:0; transform:translateY(24px);} to{opacity:1; transform:none;}}
+  .correct-banner{display:inline-flex; align-items:center; gap:14px; margin:14px 0 22px;
+    background:linear-gradient(120deg,var(--teal),var(--skyteal)); color:var(--navy);
+    font-size:clamp(22px,2.6vw,36px); font-weight:800; padding:12px 30px; border-radius:40px;
+    box-shadow:0 0 40px rgba(24,203,150,.6); animation:popBig .5s cubic-bezier(.2,1.4,.4,1) both;}
+  .correct-banner .tk{font-size:1.2em;}
+  @keyframes popBig{from{transform:scale(.6); opacity:0;} to{transform:scale(1); opacity:1;}}
+
+  .results{display:flex; gap:34px; width:100%; max-width:1420px; align-items:stretch; justify-content:center; flex-wrap:wrap;}
+  .panel{flex:1 1 480px; background:rgba(10,28,48,.55); border:1px solid rgba(255,255,255,.08);
+    border-radius:22px; padding:24px 30px; backdrop-filter:blur(6px); text-align:left;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);}
+  .panel h3{font-size:22px; margin-bottom:20px; opacity:.9; letter-spacing:1px; text-transform:uppercase;
+    display:flex; align-items:center; gap:10px;}
+
+  /* glowing bar graph */
+  .bars{display:flex; flex-direction:column; gap:18px;}
+  .bar-row{display:flex; flex-direction:column; gap:8px;}
+  .bar-head{display:flex; align-items:center; gap:12px; font-size:22px; font-weight:bold;}
+  .bar-head .shape{width:30px; height:30px; flex:none;}
+  .bar-head svg.sh{width:26px; height:26px;}
+  .bar-head .lbl{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .bar-head .num{margin-left:auto; font-size:26px; font-weight:800; opacity:.95;}
+  .bar-track{height:30px; background:rgba(255,255,255,.07); border-radius:30px; overflow:hidden;}
+  .bar-fill{height:100%; width:0; border-radius:30px; transition:width 1s cubic-bezier(.2,.8,.2,1);}
+  .bar-fill.c0{background:linear-gradient(90deg,#ff3658,var(--red));   box-shadow:0 0 22px rgba(226,27,60,.7);}
+  .bar-fill.c1{background:linear-gradient(90deg,#2b86f0,var(--blue));  box-shadow:0 0 22px rgba(19,104,206,.7);}
+  .bar-fill.c2{background:linear-gradient(90deg,#f0b91d,var(--yellow));box-shadow:0 0 22px rgba(216,158,0,.7);}
+  .bar-fill.c3{background:linear-gradient(90deg,#36b317,var(--green)); box-shadow:0 0 22px rgba(38,137,12,.7);}
+  .bar-row.correct .bar-head{color:#fff;}
+  .bar-row.correct .bar-head .num::after{content:' ✔'; color:var(--teal);}
+  .bar-row.correct .bar-track{outline:2px solid var(--teal); outline-offset:3px;}
+  .bar-row.dim{opacity:.5;}
+
+  /* fastest order list */
+  .fastlist{display:flex; flex-direction:column; gap:12px;}
+  .frow{display:flex; align-items:center; gap:16px; background:rgba(255,255,255,.07);
+    border-radius:14px; padding:13px 20px; font-size:24px; font-weight:bold;
+    opacity:0; animation:slideIn .5s forwards;}
+  @keyframes slideIn{from{opacity:0; transform:translateX(26px);} to{opacity:1; transform:none;}}
+  .frow .pos{width:54px; font-size:26px; text-align:center;}
+  .frow .t{margin-left:auto; font-size:20px; opacity:.85; font-weight:700;}
+  .frow.p1{background:linear-gradient(90deg,var(--teal),var(--skyteal)); color:var(--navy);
+    box-shadow:0 0 30px rgba(24,203,150,.55);}
+  .frow.p2{background:linear-gradient(90deg,rgba(224,230,239,.35),rgba(170,180,196,.18));}
+  .frow.p3{background:linear-gradient(90deg,rgba(232,169,106,.32),rgba(205,127,50,.16));}
+  .empty{opacity:.6; font-size:22px; padding:10px;}
+
+  /* podium */
+  .podium{display:flex; align-items:flex-end; gap:22px; justify-content:center; margin-top:16px;}
+  .pod{display:flex; flex-direction:column; align-items:center; gap:8px; animation:rise .7s cubic-bezier(.2,1.2,.4,1) both;}
+  .pod.p2{animation-delay:.1s;} .pod.p3{animation-delay:.2s;}
+  @keyframes rise{from{transform:translateY(60px); opacity:0;} to{transform:none; opacity:1;}}
+  .pod .nm{font-size:26px; font-weight:bold;}
+  .pod .bar{width:180px; border-radius:16px 16px 0 0; display:flex; align-items:flex-start; justify-content:center; padding-top:14px; font-size:40px; font-weight:bold; color:#0b1437;}
+  .pod.p1 .bar{height:170px; background:linear-gradient(var(--teal),#0fa377); box-shadow:0 0 60px rgba(24,203,150,.6);}
+  .pod.p2 .bar{height:130px; background:linear-gradient(#e0e6ef,#aab4c4);}
+  .pod.p3 .bar{height:100px; background:linear-gradient(#e8a96a,#cd7f32);}
+  .pod .place{font-size:18px; opacity:.85;}
+
+  /* open responses */
+  .opens{display:flex; flex-wrap:wrap; gap:14px; justify-content:center; max-width:1300px; max-height:60vh; overflow:auto; margin-top:10px;}
+  .ocard{background:rgba(255,255,255,.12); border-radius:14px; padding:16px 20px; font-size:24px; max-width:420px; text-align:left;
+    animation:pop .4s ease both;}
+  .ocard b{display:block; font-size:16px; opacity:.7; margin-bottom:4px;}
+
+  /* auto-advance countdown */
+  .autonext{position:fixed; left:0; right:0; bottom:0; height:7px; background:rgba(255,255,255,.08); z-index:90;}
+  .autobar{height:100%; width:0; background:linear-gradient(90deg,var(--teal),var(--skyteal));
+    box-shadow:0 0 16px var(--teal); transition:width .16s linear;}
+  .autotxt{position:fixed; bottom:16px; left:50%; transform:translateX(-50%); font-size:16px;
+    opacity:.75; letter-spacing:1px; z-index:91; font-weight:700;}
+
+  /* final leaderboard table */
+  .lbhead{display:flex; gap:18px; padding:0 22px; margin:22px auto 8px; max-width:820px;
+    font-size:14px; text-transform:uppercase; letter-spacing:1.5px; opacity:.55;}
+  .lbhead .rk{width:48px;} .lbhead .nm{flex:1; text-align:left;}
+  .lbhead .stat{min-width:130px; text-align:right;}
+  .lbtable{width:100%; max-width:820px; margin:0 auto; display:flex; flex-direction:column; gap:9px;}
+  .lbrow{display:flex; align-items:center; gap:18px; background:rgba(255,255,255,.07);
+    border-radius:12px; padding:11px 22px; font-size:22px; font-weight:bold;
+    opacity:0; animation:slideIn .5s forwards;}
+  .lbrow .rk{width:48px; opacity:.7; text-align:center;}
+  .lbrow .nm{flex:1; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .lbrow .stat{min-width:130px; text-align:right; font-size:19px; font-weight:700; opacity:.92;}
+  .lbrow.top{background:linear-gradient(90deg,var(--teal),var(--skyteal)); color:var(--navy);
+    box-shadow:0 0 28px rgba(24,203,150,.5);}
+
+  /* controls */
+  .controls{position:fixed; bottom:18px; right:22px; display:flex; gap:12px; z-index:100;}
+  .btn{background:linear-gradient(120deg,var(--teal),var(--skyteal)); color:var(--navy); border:none; border-radius:12px; padding:14px 26px; font-size:20px; font-weight:800; cursor:pointer; box-shadow:0 6px 0 rgba(0,0,0,.3);}
+  .btn:active{transform:translateY(3px); box-shadow:0 3px 0 rgba(0,0,0,.3);}
+  .btn.ghost{background:rgba(255,255,255,.16); color:#fff;}
+  .hint{position:fixed; bottom:24px; left:22px; font-size:15px; opacity:.5; z-index:100;}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<canvas id="stars"></canvas>
+<div id="app">
+  <div class="topbar">
+    <div class="logo">
+      <svg class="wsti-mark" viewBox="0 0 100 100" fill="none" stroke="#18cb96" stroke-width="15" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M27 73 L70 30"/><path d="M44 28 H72 V56"/>
+      </svg>
+      WSTI <span class="tag">Quiz</span>
+    </div>
+    <div class="pill" id="qcount">Lobby</div>
+  </div>
+  <div class="stage" id="stage"></div>
+</div>
+<canvas id="fx"></canvas>
+
+<div class="controls">
+  <button class="btn ghost" id="backBtn" onclick="host('back')">◀ Back</button>
+  <button class="btn" id="nextBtn" onclick="host('next')">Start ▶</button>
+</div>
+<div class="hint">Space / → = next &nbsp;•&nbsp; clicker works too</div>
+
+<script>
+const SHAPES = [
+  '<svg class="sh" viewBox="0 0 100 100"><polygon points="50,12 92,86 8,86"/></svg>',
+  '<svg class="sh" viewBox="0 0 100 100"><polygon points="50,8 92,50 50,92 8,50"/></svg>',
+  '<svg class="sh" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42"/></svg>',
+  '<svg class="sh" viewBox="0 0 100 100"><rect x="14" y="14" width="72" height="72" rx="6"/></svg>'
+];
+let cfg = {joinUrl:'', port:8000, public:false};
+let state = null;
+let qrUrl = null;        // the URL currently encoded in the QR
+let cfgTries = 0;
+
+// Load config; keep polling until the public (any-network) link is ready,
+// then redraw the QR with it.
+function loadConfig(){
+  fetch('/config').then(r=>r.json()).then(c=>{
+    const changed = c.joinUrl !== cfg.joinUrl || c.public !== cfg.public;
+    cfg = c;
+    if(changed && state && state.phase==='lobby') render();
+    if(!cfg.public && cfgTries++ < 30) setTimeout(loadConfig, 2000);
+  }).catch(()=>{ if(cfgTries++ < 30) setTimeout(loadConfig, 2500); });
+}
+loadConfig();
+
+// Live updates: SSE on the local network (instant); plain polling when loaded
+// over a public tunnel (Cloudflare buffers SSE, but normal GETs pass through).
+function isLan(){
+  const h=location.hostname;
+  return h==='localhost'||h==='127.0.0.1'||/^192\.168\./.test(h)||/^10\./.test(h)
+    ||/^172\.(1[6-9]|2\d|3[01])\./.test(h)||h==='';
+}
+function applyState(d){ state = d; render(); }
+(function liveUpdates(){
+  let got=false, es=null, poll=null;
+  const startPoll=()=>{ if(poll) return; if(es){es.close(); es=null;}
+    const f=()=>fetch('/state').then(r=>r.json()).then(applyState).catch(()=>{});
+    f(); poll=setInterval(f, 1200); };
+  if(isLan()){
+    try{
+      es=new EventSource('/events?role=host');
+      es.onmessage=e=>{ got=true; applyState(JSON.parse(e.data)); };
+      es.onerror=()=>{ if(!got) startPoll(); };
+    }catch(e){ startPoll(); }
+    setTimeout(()=>{ if(!got) startPoll(); }, 3000);
+  } else { startPoll(); }
+})();
+
+function host(action){
+  unlockAudio();
+  fetch('/host', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action})});
+}
+
+document.addEventListener('keydown', (e)=>{
+  unlockAudio();
+  if(e.key===' '||e.key==='ArrowRight'||e.key==='PageDown'||e.key==='Enter'){ e.preventDefault(); host('next'); }
+  if(e.key==='ArrowLeft'||e.key==='PageUp'){ e.preventDefault(); host('back'); }
+});
+
+function esc(s){return (s||'').replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function ord(n){const s=['th','st','nd','rd'],v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);}
+
+let lastSig='';
+function render(){
+  if(!state) return;
+  const stage = document.getElementById('stage');
+  const qc = document.getElementById('qcount');
+  const nextBtn = document.getElementById('nextBtn');
+  const p = state.phase;
+  if(autoInt){ clearInterval(autoInt); autoInt=null; }
+
+  if(p==='lobby'){
+    qc.textContent = state.playerCount + ' players';
+    nextBtn.textContent = 'Start ▶';
+    stage.innerHTML = lobbyHTML();
+    drawQR();
+  } else if(p==='question'){
+    qc.textContent = `Question ${state.qIndex+1} / ${state.total}`;
+    nextBtn.textContent = 'Reveal ▶';
+    stage.innerHTML = questionHTML();
+    startTimer();
+  } else if(p==='reveal'){
+    qc.textContent = `Question ${state.qIndex+1} / ${state.total}`;
+    nextBtn.textContent = (state.qIndex+1>=state.total) ? 'Final results ▶' : 'Skip ahead ▶';
+    stage.innerHTML = revealHTML() + autoBarHTML();
+    requestAnimationFrame(animateBars);
+    startAutoBar();
+  } else if(p==='podium'){
+    qc.textContent = 'Final results';
+    nextBtn.textContent = '⟳ Play again';
+    nextBtn.onclick = ()=>host('reset');
+    stage.innerHTML = podiumHTML();
+  }
+  if(p!=='lobby') qrUrl=null;
+  if(p!=='podium') nextBtn.onclick = ()=>host('next');
+
+  // ---- sound + party effects on phase change ----
+  const sig = p + ':' + state.qIndex;
+  if(sig !== lastSig){
+    lastSig = sig;
+    if(p==='question') playOpen();
+    if(p==='reveal'){ playReveal(); if((state.correctCount||0)>0) burst(80, 'confetti'); }
+    if(p==='podium'){ playFanfare(); startParty(); }
+  }
+  if(p!=='podium') stopParty();
+}
+
+function joinLink(){
+  // Deployed (big screen on a public domain): players use this same site.
+  if(!isLan()) return location.origin + '/play';
+  // Host on the laptop: prefer the public tunnel link, else this origin.
+  return cfg.joinUrl || (location.origin + '/play');
+}
+
+function lobbyHTML(){
+  const chips = (state.board||[]).map(b=>`<div class="chip">${esc(b.name)}</div>`).join('');
+  const url = joinLink();
+  const net = (!isLan() || cfg.public)
+    ? '🌐 works on any network'
+    : (cfg.joinUrl ? 'same Wi-Fi as the laptop' : 'getting link…');
+  return `<div class="lobby reveal-in">
+    <div class="joinbox">
+      <h2>Scan to join ✨</h2>
+      <div id="qrcode"></div>
+      <div class="url">${esc(url.replace(/^https?:\/\//,''))}<small>${net}</small></div>
+    </div>
+    <div class="players">
+      <h3>${state.playerCount} player${state.playerCount===1?'':'s'} in the room</h3>
+      <div class="chips">${chips || '<div style="opacity:.5;font-size:22px">Waiting for players…</div>'}</div>
+    </div>
+  </div>`;
+}
+
+function drawQR(){
+  const el = document.getElementById('qrcode');
+  const link = joinLink();
+  if(!el || !link) return;
+  if(qrUrl===link && el.firstChild) return;  // already showing this URL
+  qrUrl = link;
+  el.innerHTML='';
+  if(window.QRCode){
+    new QRCode(el, {text:link, width:260, height:260, correctLevel:QRCode.CorrectLevel.M});
+  } else {
+    el.innerHTML='<div style="color:#0b1437;font-weight:bold">(QR needs internet —<br>type the URL below)</div>';
+  }
+}
+
+function questionHTML(){
+  const q=state.question;
+  const emoji = q.emoji ? `<div class="qemoji">${q.emoji}</div>` : '';
+  const C = 2*Math.PI*52;
+  let mid = `<div class="midrow">
+      <div class="ringwrap" id="ringwrap">
+        <svg class="ring" viewBox="0 0 130 130">
+          <circle class="ring-bg" cx="65" cy="65" r="52"></circle>
+          <circle class="ring-fg" id="ringfg" cx="65" cy="65" r="52"
+            stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="0"></circle>
+        </svg>
+        <div class="ring-num" id="timer">${q.time}</div>
+      </div>
+      <div class="answered"><span>Answers</span>${state.answeredCount}</div></div>`;
+  if(q.type==='open'){
+    return `<div class="reveal-in">${emoji}<div class="qnum">Question ${state.qIndex+1}</div>
+      <div class="qtext">${esc(q.text)}</div>${mid}
+      <div style="font-size:26px;opacity:.75;margin-top:8px">✍️ Type your answer on your phone</div></div>`;
+  }
+  const opts = q.options.map((o,i)=>`<div class="opt c${i}" style="animation-delay:${i*0.09}s"><span class="shape">${SHAPES[i]}</span>${esc(o)}</div>`).join('');
+  return `<div class="reveal-in">${emoji}<div class="qnum">Question ${state.qIndex+1}</div>
+    <div class="qtext">${esc(q.text)}</div>${mid}
+    <div class="grid">${opts}</div></div>`;
+}
+
+let timerInt=null;
+function startTimer(){
+  if(timerInt) clearInterval(timerInt);
+  const q=state.question;
+  const C = 2*Math.PI*52;
+  const update=()=>{
+    const el=document.getElementById('timer');
+    const fg=document.getElementById('ringfg');
+    const wrap=document.getElementById('ringwrap');
+    if(!el){clearInterval(timerInt); return;}
+    const total=q.time*1000;
+    const elapsed=Date.now()-state.startTime;
+    const fracLeft=Math.max(0, Math.min(1, 1 - elapsed/total));
+    const left = Math.max(0, Math.ceil((total - elapsed)/1000));
+    el.textContent = left;
+    if(fg) fg.setAttribute('stroke-dashoffset', (C*(1-fracLeft)).toFixed(1));
+    if(fg){
+      const col = fracLeft>0.5 ? '#18cb96' : fracLeft>0.25 ? '#d89e00' : '#e21b3c';
+      fg.style.stroke = col;
+    }
+    if(wrap){ wrap.classList.toggle('urgent', left<=3 && left>0); }
+    if(left<=3 && left>0) tick();
+    const cnt=document.querySelector('.answered');
+    if(cnt) cnt.innerHTML = `<span>Answers</span>${state.answeredCount}`;
+    if(left<=0){ clearInterval(timerInt); }
+  };
+  update(); timerInt=setInterval(update,200);
+}
+
+function revealHTML(){
+  const q=state.question;
+  const emoji = q.emoji ? `<span style="font-size:1.1em">${q.emoji}</span> ` : '';
+  if(q.type==='open'){
+    const cards=(state.openResponses||[]).map((r,i)=>`<div class="ocard" style="animation-delay:${i*0.06}s"><b>${esc(r.name)}</b>${esc(r.text)}</div>`).join('');
+    return `<div class="reveal-in"><div class="qnum">${emoji}Question ${state.qIndex+1}</div>
+      <div class="qtext" style="font-size:clamp(24px,2.8vw,38px)">${esc(q.text)}</div>
+      <div class="opens">${cards||'<div class="empty">No answers submitted</div>'}</div></div>`;
+  }
+  const counts = state.counts || [0,0,0,0];
+  const maxc = Math.max(1, ...counts);
+  const bars = q.options.map((o,i)=>{
+    const c = counts[i]||0;
+    const correct = (i===q.correct);
+    const w = Math.round((c/maxc)*100);
+    return `<div class="bar-row ${correct?'correct':(c===0?'dim':'')}">
+      <div class="bar-head"><span class="shape">${SHAPES[i]}</span>
+        <span class="lbl">${esc(o)}</span><span class="num">${c}</span></div>
+      <div class="bar-track"><div class="bar-fill c${i}" data-w="${w}"></div></div>
+    </div>`;
+  }).join('');
+
+  const order = state.fastestOrder || [];
+  const frows = order.slice(0,8).map((f,i)=>{
+    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.';
+    return `<div class="frow p${i+1<=3?i+1:0}" style="animation-delay:${i*0.08}s">
+      <span class="pos">${medal}</span><span>${esc(f.name)}</span><span class="t">${f.t}s ⚡</span></div>`;
+  }).join('');
+  const more = order.length>8 ? `<div class="empty">+${order.length-8} more correct</div>` : '';
+  const fastPanel = order.length
+    ? frows + more
+    : '<div class="empty">No correct answers this round 😅</div>';
+
+  return `<div class="reveal-in" style="width:100%">
+    <div class="qnum">${emoji}Question ${state.qIndex+1} — Results</div>
+    <div class="correct-banner"><span class="tk">✔</span> ${esc(q.options[q.correct])}</div>
+    <div class="results">
+      <div class="panel"><h3>📊 What everyone picked</h3><div class="bars">${bars}</div></div>
+      <div class="panel"><h3>⚡ Fastest answers</h3><div class="fastlist">${fastPanel}</div></div>
+    </div>
+  </div>`;
+}
+
+function animateBars(){
+  document.querySelectorAll('.bar-fill').forEach(el=>{
+    const w = el.getAttribute('data-w')||0;
+    requestAnimationFrame(()=>{ el.style.width = w + '%'; });
+  });
+}
+
+function autoBarHTML(){
+  return `<div class="autotxt" id="autotxt"></div><div class="autonext"><div class="autobar" id="autobar"></div></div>`;
+}
+let autoInt=null;
+function startAutoBar(){
+  if(autoInt) clearInterval(autoInt);
+  const dur = state.resultsDurMs || 7000;
+  const rt  = state.revealTime || state.now;
+  const skew = Date.now() - (state.now||Date.now());   // align to server clock
+  const last = (state.qIndex+1>=state.total);
+  const upd=()=>{
+    const bar=document.getElementById('autobar'), txt=document.getElementById('autotxt');
+    if(!bar){ clearInterval(autoInt); autoInt=null; return; }
+    const elapsed = (Date.now()-skew) - rt;
+    const frac = Math.max(0, Math.min(1, elapsed/dur));
+    bar.style.width = (frac*100)+'%';
+    const left = Math.max(0, Math.ceil((dur-elapsed)/1000));
+    if(txt) txt.textContent = (last ? '🏆 Final leaderboard in ' : '⏭ Next question in ') + left + 's';
+    if(frac>=1){ clearInterval(autoInt); autoInt=null; }
+  };
+  upd(); autoInt=setInterval(upd,150);
+}
+
+function podiumHTML(){
+  const b=state.board||[];
+  const order=[1,0,2]; // 2nd, 1st, 3rd
+  const pods=order.filter(i=>b[i]).map(i=>`
+    <div class="pod p${i+1}">
+      <div class="nm">${esc(b[i].name)}</div>
+      <div class="bar">${['🥇','🥈','🥉'][i]}</div>
+      <div class="place">${['1st','2nd','3rd'][i]}</div>
+    </div>`).join('');
+  const rows=b.slice(0,8).map((x,i)=>`
+    <div class="lbrow ${i===0?'top':''}" style="animation-delay:${i*0.05}s">
+      <div class="rk">${i+1}</div><div class="nm">${esc(x.name)}</div>
+      <div class="stat">✓ ${x.correct||0}</div>
+      <div class="stat">${x.avg!=null?('⚡ '+x.avg+'s avg'):'—'}</div>
+    </div>`).join('');
+  return `<div class="reveal-in" style="width:100%; max-height:90vh; overflow:auto">
+    <div class="big" style="font-size:clamp(34px,4vw,58px)">🎉 ${b[0]?esc(b[0].name):'—'} wins!</div>
+    <div class="podium">${pods}</div>
+    <div class="lbhead"><div class="rk">#</div><div class="nm">Player</div>
+      <div class="stat">Correct</div><div class="stat">Avg speed</div></div>
+    <div class="lbtable">${rows || '<div class="empty">No players</div>'}</div>
+  </div>`;
+}
+
+/* ============================================================
+   ✨ Magic: starfield background, confetti, and sound
+   ============================================================ */
+// --- floating star/orb background ---
+(function starfield(){
+  const cv=document.getElementById('stars'), ctx=cv.getContext('2d');
+  let W,H,orbs=[];
+  function size(){ W=cv.width=innerWidth; H=cv.height=innerHeight;
+    orbs=Array.from({length:46},()=>({
+      x:Math.random()*W, y:Math.random()*H, r:Math.random()*2.4+0.6,
+      vx:(Math.random()-.5)*0.25, vy:(Math.random()-.5)*0.25,
+      a:Math.random()*0.5+0.2, tw:Math.random()*0.02+0.005
+    }));
+  }
+  size(); addEventListener('resize',size);
+  (function loop(){
+    ctx.clearRect(0,0,W,H);
+    for(const o of orbs){
+      o.x+=o.vx; o.y+=o.vy; o.a+=o.tw;
+      if(o.x<0)o.x=W; if(o.x>W)o.x=0; if(o.y<0)o.y=H; if(o.y>H)o.y=0;
+      const al=0.25+Math.abs(Math.sin(o.a))*0.55;
+      ctx.beginPath(); ctx.arc(o.x,o.y,o.r,0,7);
+      ctx.fillStyle='rgba(180,235,220,'+al+')';
+      ctx.shadowColor='rgba(24,203,150,.9)'; ctx.shadowBlur=8;
+      ctx.fill();
+    }
+    requestAnimationFrame(loop);
+  })();
+})();
+
+// --- confetti / sparkles ---
+const fx=document.getElementById('fx'), fxc=fx.getContext('2d');
+let parts=[], fxRAF=null;
+function fxSize(){ fx.width=innerWidth; fx.height=innerHeight; }
+fxSize(); addEventListener('resize',fxSize);
+function burst(n, kind){
+  const colors=['#e21b3c','#1368ce','#d89e00','#26890c','#18cb96','#7FD8C3','#6366f1','#ffffff'];
+  for(let i=0;i<n;i++){
+    parts.push({
+      x:innerWidth*(0.2+Math.random()*0.6), y:innerHeight*0.30,
+      vx:(Math.random()-.5)*16, vy:-(Math.random()*16+4),
+      g:0.32+Math.random()*0.12, size:6+Math.random()*9,
+      rot:Math.random()*6.28, vr:(Math.random()-.5)*0.5,
+      color:colors[(Math.random()*colors.length)|0],
+      star: kind==='sparkle' || Math.random()<0.25, life:0
+    });
+  }
+  if(!fxRAF) fxRAF=requestAnimationFrame(fxLoop);
+}
+function fxLoop(){
+  fxc.clearRect(0,0,fx.width,fx.height);
+  parts=parts.filter(p=>p.y<fx.height+50 && p.life<460);
+  for(const p of parts){
+    p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr; p.life++;
+    fxc.save(); fxc.translate(p.x,p.y); fxc.rotate(p.rot); fxc.fillStyle=p.color;
+    fxc.shadowColor=p.color; fxc.shadowBlur=10;
+    if(p.star){ fxc.beginPath(); fxc.arc(0,0,p.size*0.45,0,7); fxc.fill(); }
+    else fxc.fillRect(-p.size/2,-p.size/2,p.size,p.size*0.62);
+    fxc.restore();
+  }
+  if(parts.length) fxRAF=requestAnimationFrame(fxLoop); else fxRAF=null;
+}
+let partyInt=null;
+function startParty(){ if(partyInt) return; burst(140); partyInt=setInterval(()=>burst(50),650); }
+function stopParty(){ if(partyInt){ clearInterval(partyInt); partyInt=null; } }
+
+// --- Web Audio synth (offline, no files) ---
+let actx=null;
+function unlockAudio(){ if(!actx){ try{actx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } if(actx&&actx.state==='suspended') actx.resume(); }
+function tone(freq,start,dur,type,gain){
+  if(!actx) return;
+  const o=actx.createOscillator(), g=actx.createGain();
+  o.type=type||'triangle'; o.frequency.value=freq;
+  o.connect(g); g.connect(actx.destination);
+  const t0=actx.currentTime+start;
+  g.gain.setValueAtTime(0.0001,t0);
+  g.gain.exponentialRampToValueAtTime(gain||0.2,t0+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  o.start(t0); o.stop(t0+dur+0.05);
+}
+function playOpen(){ // magical ascending sparkle
+  [659.25,880,1174.7,1567.98].forEach((f,i)=>tone(f,i*0.07,0.5,'triangle',0.16));
+  tone(2093,0.32,0.6,'sine',0.08);
+}
+function playReveal(){ // cheerful chime
+  [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f,i*0.08,0.4,'triangle',0.22));
+}
+function playFanfare(){ // winner fanfare
+  const seq=[[523.25,0],[659.25,.12],[783.99,.24],[1046.5,.38],[880,.52],[1046.5,.64],[1318.5,.8]];
+  seq.forEach(([f,t])=>tone(f,t,0.55,'sawtooth',0.16));
+  [1568,2093,2637].forEach((f,i)=>tone(f,0.9+i*0.08,0.7,'triangle',0.10));
+}
+let lastTick=0;
+function tick(){ const n=Date.now(); if(n-lastTick<700) return; lastTick=n; tone(880,0,0.08,'square',0.10); }
+</script>
+</body>
+</html>

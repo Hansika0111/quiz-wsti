@@ -1,0 +1,99 @@
+================================================================
+  WSTI QUIZ  —  your free, Kahoot-style live quiz
+================================================================
+
+Players answer on their phones. The big screen shows the question,
+a 15-second timer, then ONE results screen (correct answer + a bar
+graph of what everyone picked + the order of who answered fastest),
+and it AUTO-MOVES to the next question on its own. At the end: a
+podium + leaderboard with everyone's average answer speed.
+
+Faster correct answers rank higher — no points shown, just speed.
+
+>>> NEW: players can join from ANY network (mobile data, different
+    Wi-Fi). The big screen shows a public link + QR that works
+    anywhere. (The HOST laptop just needs internet.)
+
+Keep all the files in this folder together:
+  • quiz_server.py / WSTI_Quiz.py   (the program)
+  • host.html  • player.html
+  • Start Quiz (Mac).command   /   Start Quiz (Windows).bat
+
+
+----------------------------------------------------------------
+  HOW TO RUN IT  (host laptop)
+----------------------------------------------------------------
+
+1. Make sure the HOST laptop has internet (Wi-Fi or cable).
+   Players do NOT need the same Wi-Fi.
+
+2. Start the quiz:
+     • Mac:     double-click  "Start Quiz (Mac).command"
+     • Windows: double-click  "Start Quiz (Windows).bat"
+   A black window opens.
+     - First run takes ~30s while it sets up the public link
+       (it downloads a small helper once, then remembers it).
+     - On Mac, if it says Python isn't installed, click "Install"
+       on the popup, wait, then double-click the file again.
+
+3. The window prints TWO things:
+     • BIG SCREEN link:  http://localhost:8000/host
+     • PLAYERS link:     https://something.trycloudflare.com/play
+   On the big-screen laptop, open the BIG SCREEN link in a browser
+   and go full screen (F11 on Windows, or green button on Mac).
+
+4. Players scan the QR on the big screen (or type the players link)
+   from ANY phone / network, pick a nickname, and they're in.
+
+5. Run the game from the big-screen laptop:
+     • Click "Start" (or press SPACEBAR) to begin.
+     • Each question runs 15s, then results show automatically,
+       then it moves to the next question by itself.
+     • SPACEBAR / → = skip ahead early.  ← = go back.
+     • A presentation clicker works too.
+
+6. At the end you get the podium + a leaderboard with average
+   speeds. Click "Play again" to reset.
+
+
+----------------------------------------------------------------
+  HANDING IT TO SOMEONE ELSE TO HOST (e.g. a mentor)
+----------------------------------------------------------------
+
+1. Copy this WHOLE folder to their laptop (USB / AirDrop / cloud).
+   Keep all the files together in one folder.
+
+2. They follow "HOW TO RUN IT" above on their laptop. Their laptop
+   needs internet; the players still don't.
+
+3. Mac note: if double-clicking "Start Quiz (Mac).command" shows a
+   security warning, right-click it → Open → Open. If it opens in a
+   text editor instead of running, open Terminal, type  python3
+   then a space, then drag WSTI_Quiz.py into the window, press Enter.
+
+
+----------------------------------------------------------------
+  IF THE PUBLIC LINK DOESN'T APPEAR
+----------------------------------------------------------------
+
+The public link needs internet on the host laptop. If it can't be
+created, the quiz still works for phones on the SAME Wi-Fi using the
+http://<laptop>:8000/play address shown in the window.
+
+  >> Same-Wi-Fi backup: turn ON the host phone's Personal Hotspot,
+     connect the host laptop + players' phones to THAT hotspot.
+
+Please do a quick test run before the event so there are no surprises.
+
+
+----------------------------------------------------------------
+  GOOD TO KNOW
+----------------------------------------------------------------
+
+• 15 seconds per multiple-choice question; 90 seconds for the final
+  open-ended question (its answers appear on the big screen).
+• The game auto-advances, so it runs hands-free after you press Start.
+• Up to ~50 players is comfortable. No cap, no subscription.
+• To stop the quiz, close the black window (or press Ctrl+C in it).
+
+Have a great event! 💙  — Team WSTI

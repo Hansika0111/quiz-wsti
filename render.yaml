@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: wsti-quiz
+    runtime: python
+    plan: free
+    startCommand: python WSTI_Quiz.py
+    envVars:
+      - key: QUIZ_NO_TUNNEL
+        value: "1"
