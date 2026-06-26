@@ -100,7 +100,24 @@ function doJoin(){
     });
 }
 
-function applyState(d){ state=d; render(); }
+// Only re-render when the player's view actually changes — otherwise polling
+// (every 1.2s) rebuilds the screen and would flicker / wipe a typed answer.
+let lastRenderSig='';
+function renderSig(d){
+  const p=d.phase, y=d.you||{};
+  if(p==='lobby')    return 'lobby|'+(y.name||'');
+  if(p==='question') return 'q|'+d.qIndex+'|'+(d.question&&d.question.type)+'|'+(y.answered?1:0);
+  if(p==='reveal')   return 'r|'+d.qIndex+'|'+(y.correct?1:0)+'|'+(y.speedRank||0);
+  if(p==='podium')   return 'pod|'+(y.rank||0)+'|'+(y.nCorrect||0)+'|'+(y.avg||0);
+  return p;
+}
+function applyState(d){
+  state=d;
+  const sig=renderSig(d);
+  if(sig===lastRenderSig) return;
+  lastRenderSig=sig;
+  render();
+}
 function connect(){
   _got=false;
   if(_es){ _es.close(); _es=null; }

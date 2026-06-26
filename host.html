@@ -252,7 +252,24 @@ function isLan(){
   return h==='localhost'||h==='127.0.0.1'||/^192\.168\./.test(h)||/^10\./.test(h)
     ||/^172\.(1[6-9]|2\d|3[01])\./.test(h)||h==='';
 }
-function applyState(d){ state = d; render(); }
+// Only re-render when something the screen actually shows has changed — otherwise
+// polling (every 1.2s) would needlessly rebuild the screen and flicker the QR.
+let lastRenderSig='';
+function renderSig(d){
+  const p=d.phase;
+  if(p==='lobby') return 'lobby|'+d.playerCount+'|'+(d.board||[]).map(b=>b.name).join('~');
+  if(p==='question') return 'q|'+d.qIndex+'|'+(d.question&&d.question.type);
+  if(p==='reveal') return 'r|'+d.qIndex+'|'+JSON.stringify(d.counts||0)+'|'+JSON.stringify(d.fastestOrder||d.openResponses||0);
+  if(p==='podium') return 'pod|'+JSON.stringify((d.board||[]).map(b=>[b.name,b.correct,b.avg]));
+  return p;
+}
+function applyState(d){
+  state = d;                       // keep state fresh (timers/counters read it)
+  const sig = renderSig(d);
+  if(sig === lastRenderSig) return;
+  lastRenderSig = sig;
+  render();
+}
 (function liveUpdates(){
   let got=false, es=null, poll=null;
   const startPoll=()=>{ if(poll) return; if(es){es.close(); es=null;}
@@ -397,13 +414,14 @@ function startTimer(){
   if(timerInt) clearInterval(timerInt);
   const q=state.question;
   const C = 2*Math.PI*52;
+  const skew = Date.now() - (state.now || Date.now());  // align to server clock (for cloud hosting)
   const update=()=>{
     const el=document.getElementById('timer');
     const fg=document.getElementById('ringfg');
     const wrap=document.getElementById('ringwrap');
     if(!el){clearInterval(timerInt); return;}
     const total=q.time*1000;
-    const elapsed=Date.now()-state.startTime;
+    const elapsed=(Date.now()-skew)-state.startTime;
     const fracLeft=Math.max(0, Math.min(1, 1 - elapsed/total));
     const left = Math.max(0, Math.ceil((total - elapsed)/1000));
     el.textContent = left;
