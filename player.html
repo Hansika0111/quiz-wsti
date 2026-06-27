@@ -219,19 +219,21 @@ function render(){
   }
 }
 
-/* --- tiny Web Audio (offline) --- */
+/* --- tiny Web Audio (offline) — fully guarded so it can never crash --- */
 let actx=null;
-function unlockAudio(){ if(!actx){ try{actx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } if(actx&&actx.state==='suspended') actx.resume(); }
+function unlockAudio(){ try{ if(!actx){ actx=new (window.AudioContext||window.webkitAudioContext)(); } if(actx&&actx.state==='suspended') actx.resume(); }catch(e){} }
 function tone(freq,start,dur,type,gain){
-  if(!actx) return;
-  const o=actx.createOscillator(), g=actx.createGain();
-  o.type=type||'triangle'; o.frequency.value=freq;
-  o.connect(g); g.connect(actx.destination);
-  const t0=actx.currentTime+start;
-  g.gain.setValueAtTime(0.0001,t0);
-  g.gain.exponentialRampToValueAtTime(gain||0.2,t0+0.02);
-  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
-  o.start(t0); o.stop(t0+dur+0.05);
+  try{
+    if(!actx) return;
+    const o=actx.createOscillator(), g=actx.createGain();
+    o.type=type||'triangle'; o.frequency.value=freq;
+    o.connect(g); g.connect(actx.destination);
+    const t0=actx.currentTime+start;
+    g.gain.setValueAtTime(0.0001,t0);
+    g.gain.exponentialRampToValueAtTime(gain||0.2,t0+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    o.start(t0); o.stop(t0+dur+0.05);
+  }catch(e){}
 }
 function playGood(){ [659.25,880,1174.7].forEach((f,i)=>tone(f,i*0.08,0.4,'triangle',0.2)); }
 function playBad(){ tone(311.1,0,0.3,'sawtooth',0.15); tone(207.65,0.12,0.4,'sawtooth',0.14); }
